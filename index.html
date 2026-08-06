@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ऑनलाइन फ़ाइल शेयरिंग एवं एडिटर</title>
+  <title>सुरक्षित फ़ाइल शेयरिंग एवं ऑनलाइन एडिटर</title>
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -12,84 +12,487 @@
   <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
   <!-- Supabase JS CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    .ql-container { height: 220px; font-size: 15px; border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
+    .ql-toolbar { border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; border-color: #e2e8f0 !important; }
+    .ql-container.ql-snow { border-color: #e2e8f0 !important; }
+  </style>
 </head>
-<body class="bg-slate-100 min-h-screen p-4 md:p-8 font-sans">
+<body class="bg-slate-100 min-h-screen text-slate-800 antialiased p-4 md:p-8">
 
-  <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-6">
-    <h1 class="text-2xl font-bold text-slate-800 mb-6 text-center">सुरक्षित फ़ाइल शेयरिंग एवं ऑनलाइन एडिटर</h1>
+  <!-- Main Container -->
+  <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+    
+    <!-- Header -->
+    <header class="bg-blue-600 text-white p-6 text-center">
+      <h1 class="text-2xl md:text-3xl font-bold flex items-center justify-center gap-2">
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+        सुरक्षित फ़ाइल शेयरिंग एवं एडिटर
+      </h1>
+      <p class="text-blue-100 text-sm mt-1">किसी भी फ़ाइल को पासवर्ड और एक्सपायरी डेट के साथ ऑनलाइन शेयर या एडिट करें</p>
+    </header>
 
-    <!-- Tabs Header -->
-    <div class="flex border-b mb-6">
-      <button id="tab-upload-btn" onclick="switchTab('upload')" class="py-2 px-4 border-b-2 border-blue-600 font-semibold text-blue-600">फ़ाइल अपलोड करें</button>
-      <button id="tab-editor-btn" onclick="switchTab('editor')" class="py-2 px-4 border-b-2 border-transparent font-semibold text-gray-500 hover:text-blue-600">ऑनलाइन डॉक बनाएं/एडिट करें</button>
+    <!-- Supabase Configuration Bar (Settings) -->
+    <div id="config-bar" class="bg-amber-50 border-b border-amber-200 p-4 text-xs md:text-sm">
+      <div class="flex justify-between items-center mb-2">
+        <span class="font-bold text-amber-900 flex items-center gap-1">
+          <i class="fa-solid fa-gear"></i> Supabase API सेटिंग्स
+        </span>
+        <button onclick="toggleConfigInputs()" class="text-blue-600 underline text-xs">बदले / एडिट करें</button>
+      </div>
+      <div id="config-inputs" class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <input type="text" id="supabase-url-input" placeholder="Supabase URL (https://xyz.supabase.co)" class="p-2 border rounded bg-white w-full">
+        <input type="password" id="supabase-key-input" placeholder="Supabase Anon Key" class="p-2 border rounded bg-white w-full">
+        <button onclick="saveConfig()" class="md:col-span-2 bg-amber-600 text-white py-1.5 rounded font-semibold hover:bg-amber-700">सहेजे (Save Keys)</button>
+      </div>
     </div>
 
-    <!-- Section 1: File Upload -->
-    <div id="upload-section" class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700">फ़ाइल चुनें (कोई भी फॉर्मेट)</label>
-        <input type="file" id="file-input" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+    <!-- Alert Status Box -->
+    <div id="alert-box" class="hidden m-4 p-4 rounded-lg text-sm font-medium flex items-center gap-2"></div>
+
+    <!-- VIEW / SHARE MODE (जब लिंक से फाइल खोली जाए) -->
+    <div id="share-view-section" class="hidden p-6">
+      <div class="text-center py-4">
+        <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+          <i id="file-icon" class="fa-solid fa-file"></i>
+        </div>
+        <h2 id="view-file-title" class="text-xl font-bold text-slate-800">फ़ाइल लोड हो रही है...</h2>
+        <p id="view-file-meta" class="text-xs text-slate-500 mt-1"></p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700">पासवर्ड (ऑप्शनल)</label>
-          <input type="password" id="file-password" placeholder="सुरक्षा पासवर्ड दर्ज करें" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">एक्सपायरी अवधि (दिनों में)</label>
-          <select id="file-expiry" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
-            <option value="1">1 दिन</option>
-            <option value="3">3 दिन</option>
-            <option value="7" selected>7 दिन</option>
-            <option value="30">30 दिन</option>
-          </select>
+      <!-- Password Lock Screen -->
+      <div id="password-lock-box" class="hidden max-w-md mx-auto bg-slate-50 p-5 rounded-xl border border-slate-200 mt-4">
+        <label class="block text-sm font-semibold text-slate-700 mb-2">
+          <i class="fa-solid fa-lock text-amber-500"></i> यह फ़ाइल पासवर्ड से सुरक्षित है:
+        </label>
+        <div class="space-y-3">
+          <input type="password" id="enter-password-input" placeholder="पासवर्ड दर्ज करें" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+          <button id="submit-pwd-btn" onclick="verifyFilePassword()" class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition">
+            सबमिट करें (Submit Password)
+          </button>
         </div>
       </div>
 
-      <button onclick="uploadFile()" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition">अपलोड करें और शेयरिंग लिंक बनाएं</button>
+      <!-- Content / Download Access Area -->
+      <div id="access-granted-box" class="hidden space-y-4 mt-6">
+        <!-- Download Button for Regular Uploaded Files -->
+        <a id="download-file-btn" href="#" target="_blank" download class="hidden w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold text-center block shadow transition">
+          <i class="fa-solid fa-download mr-2"></i> फ़ाइल डाउनलोड करें
+        </a>
+
+        <!-- Online Document Editor View -->
+        <div id="online-doc-view" class="hidden space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-sm font-semibold text-slate-700">ऑनलाइन एडिटर:</span>
+            <button onclick="updateSharedDoc()" id="update-doc-btn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-md font-medium">
+              <i class="fa-solid fa-floppy-disk mr-1"></i> बदलाव सेव करें
+            </button>
+          </div>
+          <div id="view-editor-container" class="bg-white rounded-lg"></div>
+        </div>
+      </div>
     </div>
 
-    <!-- Section 2: Online Editor -->
-    <div id="editor-section" class="space-y-4 hidden">
-      <div>
-        <label class="block text-sm font-medium text-gray-700">डॉक्यूमेंट का नाम</label>
-        <input type="text" id="doc-title" placeholder="उदा. MyDocument.html" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+    <!-- MAIN DASHBOARD MODE (अपलोड और एडिटर) -->
+    <div id="dashboard-section" class="p-6">
+      
+      <!-- Tabs Header -->
+      <div class="flex border-b border-slate-200 mb-6">
+        <button id="tab-upload-btn" onclick="switchTab('upload')" class="py-3 px-6 font-bold text-blue-600 border-b-2 border-blue-600 flex items-center gap-2">
+          <i class="fa-solid fa-upload"></i> फ़ाइल अपलोड करें
+        </button>
+        <button id="tab-editor-btn" onclick="switchTab('editor')" class="py-3 px-6 font-bold text-slate-500 hover:text-blue-600 border-b-2 border-transparent flex items-center gap-2">
+          <i class="fa-solid fa-file-pen"></i> नया डॉक बनाएं
+        </button>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">कंटेंट लिखें/एडिट करें</label>
-        <div id="editor-container" class="bg-white rounded-md" style="height: 250px;"></div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Tab 1: Upload Any File -->
+      <div id="upload-tab-content" class="space-y-5">
         <div>
-          <label class="block text-sm font-medium text-gray-700">पासवर्ड (ऑप्शनल)</label>
-          <input type="password" id="doc-password" placeholder="सुरक्षा पासवर्ड" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+          <label class="block text-sm font-semibold text-slate-700 mb-1">फ़ाइल चुनें (कोई भी फॉर्मेट)</label>
+          <input type="file" id="file-selector" class="block w-full text-sm text-slate-500 border border-slate-300 rounded-lg cursor-pointer p-2 bg-slate-50">
         </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">सुरक्षा पासवर्ड (ऑप्शनल)</label>
+            <input type="password" id="upload-password" placeholder="पासवर्ड सेट करें" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">एक्सपायरी अवधि</label>
+            <select id="upload-expiry" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+              <option value="1">1 दिन</option>
+              <option value="3">3 दिन</option>
+              <option value="7" selected>7 दिन</option>
+              <option value="30">30 दिन</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="upload-submit-btn" onclick="handleFileUpload()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <span>अपलोड करें और शेयरिंग लिंक बनाएं</span>
+        </button>
+      </div>
+
+      <!-- Tab 2: Create / Edit Document -->
+      <div id="editor-tab-content" class="space-y-5 hidden">
         <div>
-          <label class="block text-sm font-medium text-gray-700">एक्सपायरी अवधि</label>
-          <select id="doc-expiry" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
-            <option value="1">1 दिन</option>
-            <option value="7" selected>7 दिन</option>
-            <option value="30">30 दिन</option>
-          </select>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">डॉक्यूमेंट टाइटल</label>
+          <input type="text" id="doc-title-input" placeholder="उदा. Notice.html" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">सामग्री लिखें/एडिट करें</label>
+          <div id="main-editor-container" class="bg-white"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">सुरक्षा पासवर्ड (ऑप्शनल)</label>
+            <input type="password" id="doc-password" placeholder="पासवर्ड सेट करें" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">एक्सपायरी अवधि</label>
+            <select id="doc-expiry" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+              <option value="1">1 दिन</option>
+              <option value="7" selected>7 दिन</option>
+              <option value="30">30 दिन</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="doc-submit-btn" onclick="handleDocCreation()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-share-nodes"></i>
+          <span>डॉक्यूमेंट सेव करें और लिंक पाएं</span>
+        </button>
+      </div>
+
+      <!-- Generated Link Result Card -->
+      <div id="result-link-card" class="hidden mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+        <label class="block text-sm font-bold text-blue-900 mb-1">आपका सुरक्षित शेयरिंग लिंक तैयार है:</label>
+        <div class="flex gap-2">
+          <input type="text" id="generated-url-input" readonly class="w-full p-2.5 border rounded-lg bg-white text-sm font-mono text-slate-700">
+          <button onclick="copyGeneratedLink()" class="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-lg text-sm font-bold whitespace-nowrap">
+            <i class="fa-regular fa-copy"></i> कॉपी करें
+          </button>
         </div>
       </div>
 
-      <button onclick="saveAndShareDocument()" class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition">डॉक्यूमेंट सेव करें और लिंक पाएं</button>
-    </div>
-
-    <!-- Output Link Section -->
-    <div id="result-area" class="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-md hidden">
-      <p class="text-sm font-medium text-gray-700">आपका शेयरिंग लिंक तैयार है:</p>
-      <div class="flex items-center gap-2 mt-2">
-        <input type="text" id="share-link-input" readonly class="w-full p-2 border rounded-md bg-white text-sm">
-        <button onclick="copyLink()" class="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-900 text-sm">कॉपी करें</button>
-      </div>
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <!-- App Main Logic JavaScript -->
+  <script>
+    // --- Application State & Supabase Setup ---
+    let supabaseClient = null;
+    let mainQuillEditor = null;
+    let viewQuillEditor = null;
+    let loadedFileData = null;
+
+    // Load Credentials on Startup
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedConfig();
+      checkUrlParameters();
+    });
+
+    function loadSavedConfig() {
+      // Default / Saved keys from LocalStorage
+      const url = localStorage.getItem('sb_url') || 'https://YOUR_SUPABASE_PROJECT_URL.supabase.co';
+      const key = localStorage.getItem('sb_key') || 'YOUR_SUPABASE_ANON_KEY';
+
+      document.getElementById('supabase-url-input').value = url.includes('YOUR_SUPABASE') ? '' : url;
+      document.getElementById('supabase-key-input').value = key.includes('YOUR_SUPABASE') ? '' : key;
+
+      if (!url.includes('YOUR_SUPABASE') && !key.includes('YOUR_SUPABASE') && window.supabase) {
+        try {
+          supabaseClient = window.supabase.createClient(url, key);
+          document.getElementById('config-bar').classList.add('hidden'); // Hide config if set
+        } catch (e) {
+          showAlert('Supabase कनेक्शन त्रुटि: ' + e.message, 'error');
+        }
+      }
+    }
+
+    function toggleConfigInputs() {
+      const inputs = document.getElementById('config-inputs');
+      inputs.classList.toggle('hidden');
+    }
+
+    function saveConfig() {
+      const url = document.getElementById('supabase-url-input').value.trim();
+      const key = document.getElementById('supabase-key-input').value.trim();
+
+      if (!url || !key) {
+        return showAlert('कृपया Supabase URL और Anon Key दोनों दर्ज करें!', 'error');
+      }
+
+      localStorage.setItem('sb_url', url);
+      localStorage.setItem('sb_key', key);
+
+      try {
+        supabaseClient = window.supabase.createClient(url, key);
+        showAlert('Supabase सेटिंग्स सफलतापूर्वक सुरक्षित की गईं!', 'success');
+        document.getElementById('config-bar').classList.add('hidden');
+      } catch (e) {
+        showAlert('सेटिंग्स अमान्य हैं: ' + e.message, 'error');
+      }
+    }
+
+    // --- Tab Switcher ---
+    function switchTab(tab) {
+      const uploadTab = document.getElementById('upload-tab-content');
+      const editorTab = document.getElementById('editor-tab-content');
+      const uploadBtn = document.getElementById('tab-upload-btn');
+      const editorBtn = document.getElementById('tab-editor-btn');
+
+      if (tab === 'upload') {
+        uploadTab.classList.remove('hidden');
+        editorTab.classList.add('hidden');
+        uploadBtn.className = "py-3 px-6 font-bold text-blue-600 border-b-2 border-blue-600 flex items-center gap-2";
+        editorBtn.className = "py-3 px-6 font-bold text-slate-500 hover:text-blue-600 border-b-2 border-transparent flex items-center gap-2";
+      } else {
+        uploadTab.classList.add('hidden');
+        editorTab.classList.remove('hidden');
+        editorBtn.className = "py-3 px-6 font-bold text-blue-600 border-b-2 border-blue-600 flex items-center gap-2";
+        uploadBtn.className = "py-3 px-6 font-bold text-slate-500 hover:text-blue-600 border-b-2 border-transparent flex items-center gap-2";
+
+        if (!mainQuillEditor) {
+          mainQuillEditor = new Quill('#main-editor-container', { theme: 'snow' });
+        }
+      }
+    }
+
+    // --- UI Helpers ---
+    function showAlert(msg, type = 'info') {
+      const box = document.getElementById('alert-box');
+      box.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'bg-green-100', 'text-green-800', 'bg-blue-100', 'text-blue-800');
+      
+      if (type === 'error') box.classList.add('bg-red-100', 'text-red-800');
+      else if (type === 'success') box.classList.add('bg-green-100', 'text-green-800');
+      else box.classList.add('bg-blue-100', 'text-blue-800');
+
+      box.innerHTML = `<i class="fa-solid fa-circle-info"></i> <span>${msg}</span>`;
+    }
+
+    function setButtonLoading(btnId, isLoading, text) {
+      const btn = document.getElementById(btnId);
+      if (isLoading) {
+        btn.disabled = true;
+        btn.classList.add('opacity-75', 'cursor-not-allowed');
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>${text}</span>`;
+      } else {
+        btn.disabled = false;
+        btn.classList.remove('opacity-75', 'cursor-not-allowed');
+        btn.innerHTML = text;
+      }
+    }
+
+    function calculateExpiryIso(days) {
+      const date = new Date();
+      date.setDate(date.getDate() + parseInt(days));
+      return date.toISOString();
+    }
+
+    // --- 1. File Upload Logic ---
+    async function handleFileUpload() {
+      if (!supabaseClient) return showAlert('पहले Supabase API सेटिंग्स दर्ज करें!', 'error');
+
+      const fileInput = document.getElementById('file-selector');
+      const password = document.getElementById('upload-password').value.trim();
+      const expiryDays = document.getElementById('upload-expiry').value;
+
+      if (!fileInput.files.length) {
+        return showAlert('कृपया अपलोड करने के लिए एक फ़ाइल चुनें!', 'error');
+      }
+
+      const file = fileInput.files[0];
+      const filePath = `uploads/${Date.now()}_${file.name}`;
+
+      setButtonLoading('upload-submit-btn', true, 'फ़ाइल अपलोड हो रही है...');
+
+      try {
+        // Upload file to Supabase Bucket
+        const { error: storageErr } = await supabaseClient.storage.from('uploads').upload(filePath, file);
+        if (storageErr) throw storageErr;
+
+        const { data: urlData } = supabaseClient.storage.from('uploads').getPublicUrl(filePath);
+
+        // Save Record to DB
+        const { data: dbData, error: dbErr } = await supabaseClient.from('shared_files').insert([{
+          file_name: file.name,
+          file_url: urlData.publicUrl,
+          password_hash: password || null,
+          expires_at: calculateExpiryIso(expiryDays),
+          is_editable: false
+        }]).select().single();
+
+        if (dbErr) throw dbErr;
+
+        displayGeneratedShareUrl(dbData.id);
+        showAlert('फ़ाइल सफलतापूर्वक अपलोड हो गई!', 'success');
+      } catch (err) {
+        showAlert('अपलोड विफल: ' + err.message, 'error');
+      } finally {
+        setButtonLoading('upload-submit-btn', false, '<i class="fa-solid fa-cloud-arrow-up"></i> <span>अपलोड करें और शेयरिंग लिंक बनाएं</span>');
+      }
+    }
+
+    // --- 2. Online Document Creation Logic ---
+    async function handleDocCreation() {
+      if (!supabaseClient) return showAlert('पहले Supabase API सेटिंग्स दर्ज करें!', 'error');
+
+      const title = document.getElementById('doc-title-input').value.trim() || 'Document.html';
+      const content = mainQuillEditor ? mainQuillEditor.root.innerHTML : '';
+      const password = document.getElementById('doc-password').value.trim();
+      const expiryDays = document.getElementById('doc-expiry').value;
+
+      if (!content || content === '<p><br></p>') {
+        return showAlert('कृपया डॉक्यूमेंट में कुछ टेक्स्ट लिखें!', 'error');
+      }
+
+      setButtonLoading('doc-submit-btn', true, 'डॉक्यूमेंट सहेजा जा रहा है...');
+
+      try {
+        const blob = new Blob([content], { type: 'text/html' });
+        const file = new File([blob], title, { type: 'text/html' });
+        const filePath = `docs/${Date.now()}_${title}`;
+
+        const { error: storageErr } = await supabaseClient.storage.from('uploads').upload(filePath, file);
+        if (storageErr) throw storageErr;
+
+        const { data: urlData } = supabaseClient.storage.from('uploads').getPublicUrl(filePath);
+
+        const { data: dbData, error: dbErr } = await supabaseClient.from('shared_files').insert([{
+          file_name: title,
+          file_url: urlData.publicUrl,
+          password_hash: password || null,
+          expires_at: calculateExpiryIso(expiryDays),
+          is_editable: true,
+          content: content
+        }]).select().single();
+
+        if (dbErr) throw dbErr;
+
+        displayGeneratedShareUrl(dbData.id);
+        showAlert('डॉक्यूमेंट सफलतापूर्वक सुरक्षित कर दिया गया!', 'success');
+      } catch (err) {
+        showAlert('सेव करने में त्रुटि: ' + err.message, 'error');
+      } finally {
+        setButtonLoading('doc-submit-btn', false, '<i class="fa-solid fa-share-nodes"></i> <span>डॉक्यूमेंट सेव करें और लिंक पाएं</span>');
+      }
+    }
+
+    function displayGeneratedShareUrl(id) {
+      const shareUrl = `${window.location.origin}${window.location.pathname}?id=${id}`;
+      document.getElementById('generated-url-input').value = shareUrl;
+      document.getElementById('result-link-card').classList.remove('hidden');
+    }
+
+    function copyGeneratedLink() {
+      const input = document.getElementById('generated-url-input');
+      input.select();
+      navigator.clipboard.writeText(input.value);
+      showAlert('शेयरिंग लिंक क्लिपबोर्ड पर कॉपी हो गया!', 'success');
+    }
+
+    // --- 3. Share/View Mode Handling (जब यूजर शेयर लिंक पर आता है) ---
+    async function checkUrlParameters() {
+      const params = new URLSearchParams(window.location.search);
+      const fileId = params.get('id');
+
+      if (!fileId) return; // Normal mode
+
+      // Switch UI to View Mode
+      document.getElementById('dashboard-section').classList.add('hidden');
+      document.getElementById('share-view-section').classList.remove('hidden');
+
+      if (!supabaseClient) {
+        return showAlert('फ़ाइल लोड करने के लिए Supabase API सेटिंग्स की आवश्यकता है!', 'error');
+      }
+
+      try {
+        const { data, error } = await supabaseClient.from('shared_files').select('*').eq('id', fileId).single();
+
+        if (error || !data) {
+          document.getElementById('view-file-title').innerText = "फ़ाइल नहीं मिली!";
+          return showAlert('यह फ़ाइल हटा दी गई है या लिंक अमान्य है।', 'error');
+        }
+
+        // Check Expiry
+        if (new Date() > new Date(data.expires_at)) {
+          document.getElementById('view-file-title').innerText = "लिंक एक्सपायर हो चुका है!";
+          return showAlert('यह शेयरिंग लिंक अपनी समयावधि पूरी कर चुका है।', 'error');
+        }
+
+        loadedFileData = data;
+        document.getElementById('view-file-title').innerText = data.file_name;
+        document.getElementById('view-file-meta').innerText = `वैधता: ${new Date(data.expires_at).toLocaleDateString()} तक`;
+
+        // Password Protection Check
+        if (data.password_hash) {
+          document.getElementById('password-lock-box').classList.remove('hidden');
+        } else {
+          unlockFileContent();
+        }
+
+      } catch (err) {
+        showAlert('डेटा लोड करने में विफल: ' + err.message, 'error');
+      }
+    }
+
+    function verifyFilePassword() {
+      const enteredPwd = document.getElementById('enter-password-input').value.trim();
+
+      if (enteredPwd === loadedFileData.password_hash) {
+        document.getElementById('password-lock-box').classList.add('hidden');
+        unlockFileContent();
+        showAlert('पासवर्ड सही है! पहुँच स्वीकृत।', 'success');
+      } else {
+        showAlert('गलत पासवर्ड! पुनः प्रयास करें।', 'error');
+      }
+    }
+
+    function unlockFileContent() {
+      document.getElementById('access-granted-box').classList.remove('hidden');
+
+      if (loadedFileData.is_editable) {
+        // Editable Text Document
+        document.getElementById('online-doc-view').classList.remove('hidden');
+        if (!viewQuillEditor) {
+          viewQuillEditor = new Quill('#view-editor-container', { theme: 'snow' });
+        }
+        viewQuillEditor.root.innerHTML = loadedFileData.content || '';
+      } else {
+        // Downloadable File
+        const dlBtn = document.getElementById('download-file-btn');
+        dlBtn.href = loadedFileData.file_url;
+        dlBtn.classList.remove('hidden');
+      }
+    }
+
+    async function updateSharedDoc() {
+      if (!loadedFileData || !viewQuillEditor) return;
+
+      const newContent = viewQuillEditor.root.innerHTML;
+      setButtonLoading('update-doc-btn', true, 'सेव हो रहा है...');
+
+      try {
+        const { error } = await supabaseClient.from('shared_files')
+          .update({ content: newContent })
+          .eq('id', loadedFileData.id);
+
+        if (error) throw error;
+        showAlert('डॉक्यूमेंट ऑनलाइन अपडेट कर दिया गया है!', 'success');
+      } catch (e) {
+        showAlert('अपडेट विफल: ' + e.message, 'error');
+      } finally {
+        setButtonLoading('update-doc-btn', false, '<i class="fa-solid fa-floppy-disk mr-1"></i> बदलाव सेव करें');
+      }
+    }
+  </script>
 </body>
 </html>
