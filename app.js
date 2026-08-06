@@ -1,6 +1,6 @@
 // --- अपनी Supabase जानकारी यहाँ डालें ---
 const SUPABASE_URL = "https://nnzbcwxakicfmhpfyxvs.supabase.co/rest/v1/";
-const SUPABASE_ANON_KEY = "sb_publishable_zkOAluuqMU--kPq3mkabZA_dYVoalN8";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5uemJjd3hha2ljZm1ocGZ5eHZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5OTMwNjAsImV4cCI6MjEwMTU2OTA2MH0.NQ0yDWOorLegrRjq3rDUzsW6_cm2IrWh22sFPnthDtE";
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
