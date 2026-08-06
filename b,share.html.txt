@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>फ़ाइल एक्सेस करें</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+
+  <div class="bg-white p-6 rounded-xl shadow-md max-w-md w-full">
+    <h2 id="file-title" class="text-xl font-bold text-slate-800 mb-2">फ़ाइल एक्सेस करें</h2>
+    <p id="status-msg" class="text-sm text-gray-600 mb-4">जांच हो रही है...</p>
+
+    <!-- Password Input Box (Hidden by default) -->
+    <div id="password-box" class="space-y-3 hidden">
+      <label class="block text-sm font-medium text-gray-700">यह फ़ाइल पासवर्ड से सुरक्षित है</label>
+      <input type="password" id="access-password" placeholder="पासवर्ड दर्ज करें" class="w-full p-2 border rounded-md">
+      <button onclick="verifyAccess()" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">सबमिट करें</button>
+    </div>
+
+    <!-- Download/View Section (Hidden by default) -->
+    <div id="action-box" class="space-y-4 hidden mt-4">
+      <a id="download-btn" href="#" target="_blank" download class="block text-center bg-green-600 text-white py-2 rounded-md hover:bg-green-700">फ़ाइल डाउनलोड करें</a>
+      <div id="editable-content" class="hidden p-3 bg-gray-50 border rounded text-sm max-h-60 overflow-y-auto"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    window.onload = () => initSharePage();
+  </script>
+</body>
+</html>

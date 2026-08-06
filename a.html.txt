@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ऑनलाइन फ़ाइल शेयरिंग एवं एडिटर</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Quill.js Editor CDN -->
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+  <!-- Supabase JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-100 min-h-screen p-4 md:p-8 font-sans">
+
+  <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-6">
+    <h1 class="text-2xl font-bold text-slate-800 mb-6 text-center">सुरक्षित फ़ाइल शेयरिंग एवं ऑनलाइन एडिटर</h1>
+
+    <!-- Tabs Header -->
+    <div class="flex border-b mb-6">
+      <button id="tab-upload-btn" onclick="switchTab('upload')" class="py-2 px-4 border-b-2 border-blue-600 font-semibold text-blue-600">फ़ाइल अपलोड करें</button>
+      <button id="tab-editor-btn" onclick="switchTab('editor')" class="py-2 px-4 border-b-2 border-transparent font-semibold text-gray-500 hover:text-blue-600">ऑनलाइन डॉक बनाएं/एडिट करें</button>
+    </div>
+
+    <!-- Section 1: File Upload -->
+    <div id="upload-section" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">फ़ाइल चुनें (कोई भी फॉर्मेट)</label>
+        <input type="file" id="file-input" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">पासवर्ड (ऑप्शनल)</label>
+          <input type="password" id="file-password" placeholder="सुरक्षा पासवर्ड दर्ज करें" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">एक्सपायरी अवधि (दिनों में)</label>
+          <select id="file-expiry" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+            <option value="1">1 दिन</option>
+            <option value="3">3 दिन</option>
+            <option value="7" selected>7 दिन</option>
+            <option value="30">30 दिन</option>
+          </select>
+        </div>
+      </div>
+
+      <button onclick="uploadFile()" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition">अपलोड करें और शेयरिंग लिंक बनाएं</button>
+    </div>
+
+    <!-- Section 2: Online Editor -->
+    <div id="editor-section" class="space-y-4 hidden">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">डॉक्यूमेंट का नाम</label>
+        <input type="text" id="doc-title" placeholder="उदा. MyDocument.html" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">कंटेंट लिखें/एडिट करें</label>
+        <div id="editor-container" class="bg-white rounded-md" style="height: 250px;"></div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">पासवर्ड (ऑप्शनल)</label>
+          <input type="password" id="doc-password" placeholder="सुरक्षा पासवर्ड" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">एक्सपायरी अवधि</label>
+          <select id="doc-expiry" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+            <option value="1">1 दिन</option>
+            <option value="7" selected>7 दिन</option>
+            <option value="30">30 दिन</option>
+          </select>
+        </div>
+      </div>
+
+      <button onclick="saveAndShareDocument()" class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition">डॉक्यूमेंट सेव करें और लिंक पाएं</button>
+    </div>
+
+    <!-- Output Link Section -->
+    <div id="result-area" class="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-md hidden">
+      <p class="text-sm font-medium text-gray-700">आपका शेयरिंग लिंक तैयार है:</p>
+      <div class="flex items-center gap-2 mt-2">
+        <input type="text" id="share-link-input" readonly class="w-full p-2 border rounded-md bg-white text-sm">
+        <button onclick="copyLink()" class="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-900 text-sm">कॉपी करें</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
